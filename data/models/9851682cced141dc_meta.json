@@ -1,0 +1,161 @@
+{
+  "id": "9851682cced141dc",
+  "version_name": "ra_200rec_224850",
+  "algorithm": "random_forest",
+  "created_at": "2026-03-25T22:48:50.374824Z",
+  "training_datasets": [
+    "alaris_100rec_20260325_20260325_224828_55b9f2",
+    "alaris_100rec_20260325_20260325_224837_cffb8c"
+  ],
+  "total_records": 200,
+  "train_records": 160,
+  "test_records": 40,
+  "accuracy": 1.0,
+  "f1_macro": 1.0,
+  "f1_per_class": {
+    "low": 1.0,
+    "medium": 1.0,
+    "high": 1.0
+  },
+  "confusion_matrix": [
+    [
+      14,
+      0,
+      0
+    ],
+    [
+      0,
+      15,
+      0
+    ],
+    [
+      0,
+      0,
+      11
+    ]
+  ],
+  "feature_importance": [
+    {
+      "feature": "relative_error",
+      "importance": 0.10570062405510056
+    },
+    {
+      "feature": "battery_level_pct",
+      "importance": 0.1042196015619297
+    },
+    {
+      "feature": "days_since_maintenance",
+      "importance": 0.08475277830054789
+    },
+    {
+      "feature": "config_drift_score",
+      "importance": 0.06413701710885608
+    },
+    {
+      "feature": "drug_library_age_days",
+      "importance": 0.0557391459504288
+    },
+    {
+      "feature": "error_magnitude_ml_h",
+      "importance": 0.05335803981384339
+    },
+    {
+      "feature": "vtbi_set",
+      "importance": 0.04917022035302482
+    },
+    {
+      "feature": "vtbi_value_ml",
+      "importance": 0.04733030142230826
+    },
+    {
+      "feature": "confirmed_incorrect",
+      "importance": 0.04215400150635322
+    },
+    {
+      "feature": "intended_rate_ml_h",
+      "importance": 0.04062138192256187
+    },
+    {
+      "feature": "total_keypresses",
+      "importance": 0.03849671595628202
+    },
+    {
+      "feature": "entry_time_ms",
+      "importance": 0.03741492554138809
+    },
+    {
+      "feature": "large_up_count",
+      "importance": 0.03640480873921214
+    },
+    {
+      "feature": "firmware_version_risk",
+      "importance": 0.03483807191880429
+    },
+    {
+      "feature": "final_rate_ml_h",
+      "importance": 0.03416496072765333
+    },
+    {
+      "feature": "recent_occlusion_alarms",
+      "importance": 0.02892442152779221
+    },
+    {
+      "feature": "network_connected",
+      "importance": 0.02640287921257485
+    },
+    {
+      "feature": "large_btn_ratio",
+      "importance": 0.013338068511844383
+    },
+    {
+      "feature": "golden_path_ratio",
+      "importance": 0.013217743523169836
+    },
+    {
+      "feature": "guardrail_hard_max",
+      "importance": 0.012100896012521435
+    }
+  ],
+  "feature_cols": [
+    "entry_time_ms",
+    "total_keypresses",
+    "large_up_count",
+    "small_up_count",
+    "small_down_count",
+    "large_down_count",
+    "correction_count",
+    "boundary_hit_count",
+    "large_btn_ratio",
+    "golden_path_ratio",
+    "final_rate_ml_h",
+    "intended_rate_ml_h",
+    "error_magnitude_ml_h",
+    "relative_error",
+    "confirmed_incorrect",
+    "drug_library_used",
+    "guardrail_soft_min",
+    "guardrail_soft_max",
+    "guardrail_hard_min",
+    "guardrail_hard_max",
+    "guardrail_warning_shown",
+    "guardrail_override",
+    "guardrail_blocked",
+    "rate_within_soft_limits",
+    "vtbi_set",
+    "vtbi_value_ml",
+    "kvo_rate_ml_h",
+    "bolus_delivered",
+    "bolus_volume_ml",
+    "secondary_infusion",
+    "patient_weight_kg",
+    "pressure_alarm_level",
+    "days_since_maintenance",
+    "battery_level_pct",
+    "firmware_version_risk",
+    "network_connected",
+    "drug_library_age_days",
+    "config_drift_score",
+    "recent_occlusion_alarms",
+    "alarms_during_session"
+  ]
+}

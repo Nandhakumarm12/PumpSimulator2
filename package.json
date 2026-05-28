@@ -1,0 +1,31 @@
+{
+  "name": "alaris-simulator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate": "vite-node src/ai/datasetBuilder.ts",
+    "lint": "tsc --noEmit",
+    "server": "cd server && .venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "server:install": "cd server && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/ui": "^2.0.5",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vite-node": "^2.0.5",
+    "vitest": "^2.0.5"
+  }
+}

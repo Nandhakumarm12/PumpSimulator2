@@ -1,0 +1,12 @@
+{
+  "id": "e5be9d45-d6a2-490f-9c45-0b2171efec06",
+  "name": "combined_100rec_20260501",
+  "filename": "combined_100rec_20260501_20260430_231129_fd524f",
+  "record_count": 200,
+  "created_at": "2026-04-30T23:11:29.922562Z",
+  "distribution": {
+    "low": 48,
+    "medium": 50,
+    "high": 102
+  }
+}
