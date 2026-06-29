@@ -1,47 +1,24 @@
-import { useState, useCallback } from 'react';
 import { PumpProvider } from './contexts/PumpContext';
 import { BraunPumpProvider } from './contexts/BraunPumpContext';
-import { GrasebyPumpProvider } from './contexts/GrasebyPumpContext';
 import { NetworkProvider } from './contexts/NetworkContext';
 import { ThemeProvider, useTheme, useThemeToggle } from './contexts/ThemeContext';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import AlarisGP from './components/AlarisGP';
 import BraunInfusomat from './components/BraunInfusomat';
-import Graseby3100 from './components/Graseby3100';
-import NetworkSimulator from './components/NetworkSimulator';
-import ResearchPanel from './components/Research/ResearchPanel';
-import Home from './components/Home';
-import Compare from './components/Compare';
+import Docs from './components/Docs';
 
-type Tab = 'HOME' | 'PUMP' | 'BRAUN' | 'GRASEBY' | 'COMPARE' | 'RESEARCH';
+type Tab = 'PUMP' | 'BRAUN' | 'DOCS';
 
 const TAB_LABELS: Record<Tab, string> = {
-  HOME:     '⌂ HOME',
-  PUMP:     '⊕ ALARIS GP',
-  BRAUN:    '⊞ B. BRAUN',
-  GRASEBY:  '⊟ GRASEBY',
-  COMPARE:  '⊜ COMPARE',
-  RESEARCH: '◈ RESEARCH',
+  PUMP:  '⊕ ALARIS GP',
+  BRAUN: '⊞ B. BRAUN',
+  DOCS:  '⬇ MANUALS',
 };
 
-const SIMULATOR_LS_KEYS = [
-  'alaris_pump_state', 'alaris_session_log', 'alaris_session_start',
-  'braun_pump_state',  'braun_session_log',  'braun_session_start',
-  'graseby_pump_state','graseby_session_log','graseby_session_start',
-  'pump_sim_tab',
-];
-
 function AppShell() {
-  const [activeTab, setActiveTab] = useLocalStorage<Tab>('pump_sim_tab', 'HOME');
-  const [confirmReset, setConfirmReset] = useState(false);
+  const [activeTab, setActiveTab] = useLocalStorage<Tab>('pump_sim_tab', 'PUMP');
   const C = useTheme();
   const { isDark, toggleTheme } = useThemeToggle();
-
-  const handleMasterReset = useCallback(() => {
-    if (!confirmReset) { setConfirmReset(true); return; }
-    SIMULATOR_LS_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch { /* ignore */ } });
-    window.location.reload();
-  }, [confirmReset]);
 
   return (
     <div style={{
@@ -81,29 +58,6 @@ function AppShell() {
           ))}
         </div>
 
-        {/* Master reset — clears all simulator localStorage and reloads */}
-        <button
-          onClick={handleMasterReset}
-          onMouseLeave={() => setConfirmReset(false)}
-          title="Clear all simulator state and reload"
-          style={{
-            background: confirmReset ? '#4a0a0a' : 'transparent',
-            border: 'none',
-            borderLeft: `1px solid ${C.border.default}`,
-            color: confirmReset ? '#ff6666' : C.text.secondary,
-            padding: '0 14px',
-            cursor: 'pointer',
-            fontSize: 11,
-            letterSpacing: 1,
-            fontFamily: "'Share Tech Mono', monospace",
-            transition: 'all 0.15s',
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {confirmReset ? 'CONFIRM RESET?' : '⟳ RESET ALL'}
-        </button>
-
         {/* Theme toggle — pinned right */}
         <button
           onClick={toggleTheme}
@@ -128,15 +82,9 @@ function AppShell() {
       </div>
 
       {/* Tab content */}
-      <div style={{ display: activeTab === 'HOME'     ? 'block' : 'none' }}><Home onNavigate={(tab) => setActiveTab(tab as Tab)} /></div>
-      <div style={{ display: activeTab === 'PUMP'     ? 'block' : 'none' }}>
-        <AlarisGP />
-        <NetworkSimulator />
-      </div>
-      <div style={{ display: activeTab === 'BRAUN'    ? 'block' : 'none' }}><BraunInfusomat /></div>
-      <div style={{ display: activeTab === 'GRASEBY'  ? 'block' : 'none' }}><Graseby3100 /></div>
-      <div style={{ display: activeTab === 'COMPARE'  ? 'block' : 'none' }}><Compare /></div>
-      <div style={{ display: activeTab === 'RESEARCH' ? 'block' : 'none' }}><ResearchPanel /></div>
+      <div style={{ display: activeTab === 'PUMP'  ? 'block' : 'none' }}><AlarisGP /></div>
+      <div style={{ display: activeTab === 'BRAUN' ? 'block' : 'none' }}><BraunInfusomat /></div>
+      <div style={{ display: activeTab === 'DOCS'  ? 'block' : 'none' }}><Docs /></div>
     </div>
   );
 }
@@ -147,9 +95,7 @@ export default function App() {
       <NetworkProvider>
       <PumpProvider>
       <BraunPumpProvider>
-      <GrasebyPumpProvider>
         <AppShell />
-      </GrasebyPumpProvider>
       </BraunPumpProvider>
       </PumpProvider>
       </NetworkProvider>

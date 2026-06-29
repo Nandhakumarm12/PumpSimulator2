@@ -49,8 +49,8 @@ export const FACTORY_DEFAULTS = {
   RATE_TITRATION:        false,
 
   // Chevron steps (DFU manual Section 3 "faster/slower")
-  STEP_LARGE:            10,
-  STEP_SMALL:            1,
+  STEP_LARGE:            1,
+  STEP_SMALL:            0.1,
 
   // Hold-to-accelerate timing (ms)
   HOLD_DELAY_MS:         500,
@@ -82,8 +82,8 @@ export const FACTORY_DEFAULTS = {
   // "AIR_IN_LINE: auto after 500ml" — DFU Alarms section (simulator approximation)
   AIL_VOLUME_TRIGGER_ML: 500,
 
-  // Battery simulation — not from DFU (hardware-specific); approximated for realism
-  // Drain rate: 0.005% per 500ms tick → 87% battery lasts ~2.4 hours before BATTERY_LOW
+  // Battery simulation: 1-hour session. 87% start → BATTERY_LOW at 15% after ~50 min.
+  // 72% drain / 6000 ticks (50 min at 500ms) = 0.012 per tick
   BATTERY_LOW_PCT:       15,
-  BATTERY_DRAIN_PER_TICK: 0.005,
+  BATTERY_DRAIN_PER_TICK: 0.012,
 } as const;

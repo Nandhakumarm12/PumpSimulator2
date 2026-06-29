@@ -230,6 +230,10 @@ export function usePump() {
     apply(SM.triggerAlarm(pumpStateRef.current, alarmType, ts()));
   }, [apply, ts]);
 
+  const handleSetBattery = useCallback((level: number) => {
+    setPumpState(s => ({ ...s, batteryLevel: Math.max(0, Math.min(100, level)) }));
+  }, []);
+
   /** Confirm the weight in WEIGHT_ENTRY and proceed to RATE_ENTRY. */
   const handleConfirmWeight = useCallback(() => {
     apply(SM.confirmWeight(pumpStateRef.current, ts()));
@@ -297,6 +301,8 @@ export function usePump() {
     handleConfirmWeight,
     handleCancelWeight,
     handleResetWeightBuffer,
+    handleSetBattery,
+    resetSessionLog: logger.resetSession,
     startBolus,
     stopBolus,
     chevronHandlers,

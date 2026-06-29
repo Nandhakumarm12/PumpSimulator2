@@ -318,8 +318,13 @@ export function useBraunPump() {
     apply(toggleRecallBatch(pumpStateRef.current, ts()));
   }, [apply, ts]);
 
+  const handleSetBattery = useCallback((level: number) => {
+    setPumpState(s => ({ ...s, batteryLevel: Math.max(0, Math.min(100, level)) }));
+  }, []);
+
   return {
     pumpState,
+    isMuted: pumpState.mutedUntil > Date.now(),
     drugLibrary: BRAUN_DRUG_LIBRARY,
     sessionLog: logger.sessionLog,
     keypressCount: logger.keypressCount,
@@ -371,5 +376,7 @@ export function useBraunPump() {
     handleClearVolume,
     handleSetWeight,
     handleToggleRecall,
+    handleSetBattery,
+    resetSessionLog: logger.resetSession,
   };
 }

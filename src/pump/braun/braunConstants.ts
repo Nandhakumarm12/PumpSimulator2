@@ -125,9 +125,9 @@ export const BRAUN_DEFAULTS = {
 
   // ── Chevron steps ────────────────────────────────────────────────────────────
   /** Double chevron step size (same as Alaris GP). */
-  STEP_LARGE:             10,
+  STEP_LARGE:             1,
   /** Single chevron step size (same as Alaris GP). */
-  STEP_SMALL:             1,
+  STEP_SMALL:             0.1,
 
   // ── Timing ───────────────────────────────────────────────────────────────────
   /** Hold delay before repeat starts in ms. Source: IFU — hold-to-repeat. */
@@ -146,8 +146,8 @@ export const BRAUN_DEFAULTS = {
   BATTERY_LEVEL:          100,
   /** Battery level percentage below which BATTERY_LOW alarm fires. */
   BATTERY_LOW_PCT:        15,
-  /** Battery drain per infusion tick (same rate as Alaris GP for comparability). */
-  BATTERY_DRAIN_PER_TICK: 0.005,
+  /** Battery drain per infusion tick — 100% → 15% (BATTERY_LOW) in ~50 min at 500ms ticks. */
+  BATTERY_DRAIN_PER_TICK: 0.012,
 
   // ── SpaceCom2 module (B. Braun specific) ─────────────────────────────────────
   /**

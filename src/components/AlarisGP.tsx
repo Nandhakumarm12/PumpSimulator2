@@ -6,6 +6,9 @@ import { checkGuardrail } from '../pump/guardrails';
 import type { Drug } from '../pump/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { T } from '../styles/tokens';
+import { useAlarmSound } from '../hooks/useAlarmSound';
+import type { AlarmSoundType } from '../hooks/useAlarmSound';
+import SessionPanel from './SessionPanel';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -109,6 +112,7 @@ export default function AlarisGP() {
   const [displayFlash, setDisplayFlash] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const prevScreen = useRef(pumpState.screen);
+  const { playAlarm, stopSound } = useAlarmSound();
 
   function handleReset() {
     if (!confirmReset) { setConfirmReset(true); return; }
@@ -121,17 +125,45 @@ export default function AlarisGP() {
     setTimeout(() => setDisplayFlash(null), 400);
   }
 
-  // Auto-flash LCD when state machine transitions into ALARM or GUARDRAIL screens
+  function alarmToSound(alarmType: string | null): AlarmSoundType {
+    if (!alarmType) return 'none';
+    const criticals = ['OCCLUSION', 'AIR_IN_LINE', 'UPSTREAM_OCCLUSION', 'SET_NOT_PRIMED'];
+    const warnings  = ['BATTERY_LOW', 'AC_FAIL'];
+    if (criticals.includes(alarmType)) return 'critical';
+    if (warnings.includes(alarmType))  return 'warning';
+    return 'advisory';
+  }
+
+  // Play/stop sound on screen transitions
   useEffect(() => {
     const prev = prevScreen.current;
     const curr = pumpState.screen;
     if (curr !== prev) {
-      if (curr === "ALARM") flash("alarm");
-      else if (curr === "GUARDRAIL_WARNING") flash("guardrail");
-      else if (curr === "GUARDRAIL_BLOCKED") flash("alarm");
+      if (curr === "ALARM") {
+        flash("alarm");
+        if (!pump.isMuted) playAlarm(alarmToSound(pumpState.alarmType ?? null));
+      } else if (curr === "GUARDRAIL_WARNING") {
+        flash("guardrail");
+        playAlarm('soft_limit');
+      } else if (curr === "GUARDRAIL_BLOCKED") {
+        flash("alarm");
+        playAlarm('hard_limit');
+      } else {
+        stopSound();
+      }
       prevScreen.current = curr;
     }
-  }, [pumpState.screen]);
+  }, [pumpState.screen, pumpState.alarmType, pump.isMuted, playAlarm, stopSound]);
+
+  // MUTE button on pump — stop sound immediately; resume when mute expires if still on ALARM
+  useEffect(() => {
+    if (pump.isMuted) {
+      stopSound();
+    } else if (pumpState.screen === "ALARM") {
+      // Mute window just expired — re-sound per DFU spec
+      playAlarm(alarmToSound(pumpState.alarmType ?? null));
+    }
+  }, [pump.isMuted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derived display values
   const mlH = rateToMlH(
@@ -215,7 +247,7 @@ export default function AlarisGP() {
         ];
       case "ALARM":
         return [
-          { label: "SILENCE", primary: true, action: pump.handleSilenceAlarm },
+          { label: "SILENCE", primary: true, action: () => { stopSound(); pump.handleSilenceAlarm(); } },
           { label: "", action: () => {} },
           { label: "", action: () => {} },
         ];
@@ -500,6 +532,22 @@ export default function AlarisGP() {
         ::-webkit-scrollbar-thumb { background: #1e4080; border-radius: 2px; }
       `}</style>
 
+      {/* Session panel — fixed right side */}
+      <SessionPanel
+        device="ALARIS"
+        batteryLevel={pumpState.batteryLevel}
+        isRunning={pumpState.screen === "RUNNING"}
+        drugName={pumpState.selectedDrug?.name}
+        rate={pumpState.rate}
+        volumeInfused={pumpState.volumeInfused}
+        alarmActive={pumpState.screen === "ALARM"}
+        onSilence={() => { stopSound(); pump.handleSilenceAlarm(); }}
+        onDownload={exportCSV}
+        onSimulateBatteryLow={() => { pump.handleSetBattery(10); pump.handleTriggerAlarm('BATTERY_LOW'); }}
+        onChargeBattery={() => pump.handleSetBattery(100)}
+        onStartSession={pump.resetSessionLog}
+      />
+
       {/* Pump chassis */}
       <div className="pump-body" style={{
         width: 380, background: "#1a1f2e",
@@ -587,7 +635,7 @@ export default function AlarisGP() {
           <PumpButton label="RUN" color="#1a5a1a" activeColor="#2a8a2a"
             active={pumpState.screen === "RUNNING"} led={pumpState.screen === "RUNNING"} ledColor="#3aff3a"
             onClick={pump.handleRun} />
-          <PumpButton label="HOLD" color="#4a3a0a" activeColor="#7a5a1a"
+          <PumpButton label={pumpState.screen === "ON_HOLD" ? "ON HOLD" : "HOLD"} color="#4a3a0a" activeColor="#7a5a1a"
             active={pumpState.screen === "ON_HOLD"} onClick={pump.handleHold} />
           <PumpButton label="BOLUS" color="#1a2a4a" activeColor="#2a4a7a"
             active={pumpState.bolusActive}
@@ -617,6 +665,24 @@ export default function AlarisGP() {
           <span style={{ color: guardrailStatus.status === "warning" ? "#aa6600" : guardrailStatus.status === "blocked" ? "#aa2200" : "#1a5a1a", fontSize: T.nano }}>
             {guardrailStatus.status === "ok" ? "◉ GUARDRAILS" : guardrailStatus.status === "warning" ? "⚠ SOFT LIMIT" : "✗ HARD LIMIT"}
           </span>
+        </div>
+
+        {/* Simulate alarms panel */}
+        <div style={{ background: "#060c16", padding: "8px 14px 10px", borderTop: "1px solid #1a2030" }}>
+          <div style={{ color: "#1a3a5a", fontSize: T.nano, letterSpacing: 1, marginBottom: 5 }}>SIMULATE ALARMS</div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(['OCCLUSION', 'AIR_IN_LINE', 'BATTERY_LOW', 'INFUSION_COMPLETE'] as const).map(a => (
+              <button key={a}
+                onClick={() => pump.handleTriggerAlarm(a)}
+                style={{
+                  background: "#0a1828", border: "1px solid #1a3a5a", borderRadius: 4,
+                  color: "#3a6080", fontSize: T.nano, padding: "3px 6px", cursor: "pointer", letterSpacing: 0.5,
+                  fontFamily: "'Share Tech Mono', monospace",
+                }}>
+                {a.replace(/_/g, ' ')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

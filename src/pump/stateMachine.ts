@@ -407,8 +407,8 @@ export function infusionTick(
     return triggerAlarm(ticked, "BATTERY_LOW", timestamp);
   }
 
-  // 4. VTBI complete — drop to KVO rate and raise advisory alarm
-  if (state.vtbi !== null && newVolume >= state.vtbi) {
+  // 4. VTBI complete — drop to KVO rate and raise advisory alarm (skip if already in KVO)
+  if (state.vtbi !== null && !state.kvoActive && newVolume >= state.vtbi) {
     const kvoState: PumpState = {
       ...ticked,
       volumeInfused: state.vtbi,

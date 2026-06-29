@@ -27,6 +27,9 @@ import { checkBraunGuardrail } from '../pump/braun/braunGuardrails';
 import type { Drug } from '../pump/types';
 import { useTheme } from '../contexts/ThemeContext';
 import { T } from '../styles/tokens';
+import { useAlarmSound } from '../hooks/useAlarmSound';
+import type { AlarmSoundType } from '../hooks/useAlarmSound';
+import SessionPanel from './SessionPanel';
 
 // ── Colour palette (B. Braun brand) ─────────────────────────────────────────
 const C = {
@@ -233,6 +236,7 @@ export default function BraunInfusomat() {
   const [flash, setFlashState] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const prevScreen = useRef(pumpState.screen);
+  const { playAlarm, stopSound } = useAlarmSound();
 
   const handleReset = useCallback(() => {
     if (!confirmReset) { setConfirmReset(true); return; }
@@ -240,23 +244,74 @@ export default function BraunInfusomat() {
     window.location.reload();
   }, [confirmReset]);
 
+  function handleHardStop() {
+    stopSound();
+    pump.handleSilenceAlarm();
+  }
+
   // Flash LCD background on screen transitions
   function triggerFlash(type: string) {
     setFlashState(type);
     setTimeout(() => setFlashState(null), 400);
   }
 
+  function alarmToSound(alarmType: string | null): AlarmSoundType {
+    if (!alarmType) return 'none';
+    const criticals = ['OCCLUSION', 'AIR_IN_LINE', 'UPSTREAM_OCCLUSION', 'SET_NOT_PRIMED', 'FIRMWARE_UNSIGNED', 'SPACECOM2_FAULT'];
+    const warnings  = ['BATTERY_LOW', 'AC_FAIL'];
+    if (criticals.includes(alarmType)) return 'critical';
+    if (warnings.includes(alarmType))  return 'warning';
+    return 'advisory';
+  }
+
   useEffect(() => {
     const prev = prevScreen.current;
     const curr = pumpState.screen;
     if (curr !== prev) {
-      if (curr === 'ALARM') triggerFlash('alarm');
-      else if (curr === 'GUARDRAIL_WARNING') triggerFlash('warning');
-      else if (curr === 'GUARDRAIL_BLOCKED') triggerFlash('alarm');
-      else if (curr === 'GUARDRAIL_ADVISORY') triggerFlash('advisory');
+      if (curr === 'ALARM') {
+        triggerFlash('alarm');
+        if (!pump.isMuted) playAlarm(alarmToSound(pumpState.alarmType ?? null));
+      } else if (curr === 'GUARDRAIL_WARNING') {
+        triggerFlash('warning');
+        playAlarm('soft_limit');
+      } else if (curr === 'GUARDRAIL_BLOCKED') {
+        triggerFlash('alarm');
+        playAlarm('hard_limit');
+      } else if (curr === 'GUARDRAIL_ADVISORY') {
+        triggerFlash('advisory');
+        playAlarm('advisory');
+      } else {
+        stopSound();
+      }
       prevScreen.current = curr;
     }
-  }, [pumpState.screen]);
+  }, [pumpState.screen, pumpState.alarmType, pump.isMuted, playAlarm, stopSound]);
+
+  // MUTE button — stop sound immediately; resume when mute expires if still on ALARM
+  useEffect(() => {
+    if (pump.isMuted) {
+      stopSound();
+    } else if (pumpState.screen === 'ALARM') {
+      playAlarm(alarmToSound(pumpState.alarmType ?? null));
+    }
+  }, [pump.isMuted]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function exportCSV() {
+    const header = 'timestamp,screen,event,rate,delta,newRate,drug,vtbi,guardrailStatus,overrideChoice,alarmType,bolusVolume,pressureLevel,newWeight\n';
+    const rows = pump.sessionLog.map(e =>
+      [e.timestamp, e.screen, e.event,
+       e.rate ?? '', e.delta ?? '', e.newRate ?? '',
+       e.drug ?? '', e.vtbi ?? '', e.guardrailStatus ?? '',
+       e.overrideChoice ?? '', e.alarmType ?? '',
+       e.bolusVolume ?? '', e.pressureLevel ?? '', e.newWeight ?? '',
+      ].join(',')
+    ).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `braun_session_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // Derived values
   const drug = drugLibrary.find(d => d.id === pumpState.selectedDrugId) ?? drugLibrary[0];
@@ -332,7 +387,7 @@ export default function BraunInfusomat() {
         ];
       case 'ALARM':
         return [
-          { label: 'SILENCE', primary: true, action: pump.handleSilenceAlarm },
+          { label: 'SILENCE', primary: true, action: () => { stopSound(); pump.handleSilenceAlarm(); } },
           { label: '', action: () => {} },
           { label: '', action: () => {} },
         ];
@@ -669,15 +724,35 @@ export default function BraunInfusomat() {
   const isHold    = pumpState.screen === 'ON_HOLD';
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: TK.bg.page, minHeight: '100vh' }}>
+
+      {/* Session panel — fixed right side */}
+      <SessionPanel
+        device="BRAUN"
+        batteryLevel={pumpState.batteryLevel}
+        isRunning={pumpState.screen === 'RUNNING'}
+        drugName={drug?.name}
+        rate={pumpState.rate}
+        volumeInfused={pumpState.volumeInfused}
+        alarmActive={pumpState.screen === 'ALARM'}
+        onSilence={() => { stopSound(); pump.handleSilenceAlarm(); }}
+        onDownload={exportCSV}
+        onSimulateBatteryLow={() => { pump.handleSetBattery(10); pump.handleTriggerAlarm('BATTERY_LOW'); }}
+        onChargeBattery={() => pump.handleSetBattery(100)}
+        onStartSession={pump.resetSessionLog}
+      />
+
     <div style={{
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'flex-start',
       gap: 32,
       padding: '24px 16px',
-      minHeight: '100vh',
       background: TK.bg.page,
       backgroundImage: `radial-gradient(ellipse at 80% 50%, ${TK.bg.inset} 0%, ${TK.bg.page} 70%)`,
+      transform: 'scale(1.25)',
+      transformOrigin: 'top center',
+      marginBottom: '25%',
     }}>
 
       {/* ── Left info panel ──────────────────────────────────────────── */}
@@ -1193,6 +1268,7 @@ export default function BraunInfusomat() {
         )}
       </div>
 
+    </div>
     </div>
   );
 }
