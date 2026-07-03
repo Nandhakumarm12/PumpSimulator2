@@ -1,0 +1,611 @@
+{
+  "generatedAt": "2026-07-03T02:36:36.694Z",
+  "totalTests": 58,
+  "passed": 58,
+  "failed": 0,
+  "passRate": 1,
+  "byDevice": {
+    "ALARIS_GP": {
+      "total": 25,
+      "passed": 25,
+      "failed": 0
+    },
+    "B_BRAUN": {
+      "total": 18,
+      "passed": 18,
+      "failed": 0
+    },
+    "GRASEBY": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0
+    },
+    "CROSS_DEVICE": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "tests": [
+    {
+      "id": "BFV-AG-001",
+      "device": "ALARIS_GP",
+      "description": "Power-on state is LANGUAGE_SELECT",
+      "dfuRef": "1000DF §2.1 — Language Selection (first screen on power-on)",
+      "pvsioweb": true,
+      "expected": "getInitialState().screen === \"LANGUAGE_SELECT\"",
+      "actual": "screen = \"LANGUAGE_SELECT\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-002",
+      "device": "ALARIS_GP",
+      "description": "LANGUAGE_SELECT → DRUG_SELECT on selectLanguage()",
+      "dfuRef": "1000DF §2.1 — \"Select language, pump advances to Drug Select screen\"",
+      "pvsioweb": true,
+      "expected": "screen === \"DRUG_SELECT\"",
+      "actual": "screen = \"DRUG_SELECT\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-003",
+      "device": "ALARIS_GP",
+      "description": "Selecting a non-weight drug transitions to RATE_ENTRY",
+      "dfuRef": "1000DF §2.3 — Drug selection workflow; CLAUDE.md §6.2 DRUG_SELECT → RATE_ENTRY",
+      "pvsioweb": true,
+      "expected": "screen === \"RATE_ENTRY\" (morphine, weightBased=false)",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-004",
+      "device": "ALARIS_GP",
+      "description": "Selecting a weight-based drug transitions to WEIGHT_ENTRY",
+      "dfuRef": "1000DF §2.3 — \"Weight-based drugs require patient weight confirmation first\"",
+      "pvsioweb": false,
+      "expected": "screen === \"WEIGHT_ENTRY\" (adrenaline, weightBased=true)",
+      "actual": "screen = \"WEIGHT_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-005",
+      "device": "ALARIS_GP",
+      "description": "Double chevron (»») increases rateBuffer by STEP_LARGE (10)",
+      "dfuRef": "1000DF §3.1 Table 1 — \"Double chevron: faster increase of values\"; FACTORY_DEFAULTS.STEP_LARGE = 10",
+      "pvsioweb": false,
+      "expected": "rateBuffer increases by exactly 10",
+      "actual": "delta = 10 ml/h (expected 10)",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-006",
+      "device": "ALARIS_GP",
+      "description": "Single chevron (») increases rateBuffer by STEP_SMALL (1)",
+      "dfuRef": "1000DF §3.1 Table 1 — \"Single chevron: slower increase of values\"; FACTORY_DEFAULTS.STEP_SMALL = 1",
+      "pvsioweb": false,
+      "expected": "rateBuffer increases by exactly 1",
+      "actual": "delta = 1 ml/h (expected 1)",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-007",
+      "device": "ALARIS_GP",
+      "description": "Rate clamps at RATE_MAX (1200 ml/h) and logs boundary_hit",
+      "dfuRef": "1000DF §4 Factory Defaults — \"Infusion Rate Max 1200 ml/h\"; CLAUDE.md §6.3 Boundary Clamping",
+      "pvsioweb": false,
+      "expected": "rateBuffer stays 1200, logEntries contains boundary_hit",
+      "actual": "rateBuffer=1200, boundary_hit logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-008",
+      "device": "ALARIS_GP",
+      "description": "Rate clamps at RATE_MIN (0.1 ml/h) and logs boundary_hit",
+      "dfuRef": "1000DF §4 Factory Defaults — \"Infusion Rate Min 0.1 ml/h\"; CLAUDE.md §6.3 Boundary Clamping",
+      "pvsioweb": false,
+      "expected": "rateBuffer stays 0.1, logEntries contains boundary_hit",
+      "actual": "rateBuffer=0.1, boundary_hit logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-009",
+      "device": "ALARIS_GP",
+      "description": "Rate above soft limit triggers GUARDRAIL_WARNING screen on RUN",
+      "dfuRef": "BDDF §4 — \"Soft limit exceeded: pump stops, warning displayed, nurse must override or re-enter\"",
+      "pvsioweb": true,
+      "expected": "screen === \"GUARDRAIL_WARNING\" (morphine rate=15 > softMax=10)",
+      "actual": "screen = \"GUARDRAIL_WARNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-010",
+      "device": "ALARIS_GP",
+      "description": "Rate above hard limit triggers GUARDRAIL_BLOCKED screen on RUN",
+      "dfuRef": "BDDF §4 — \"Hard limit exceeded: pump blocked, nurse must re-enter (no override)\"",
+      "pvsioweb": true,
+      "expected": "screen === \"GUARDRAIL_BLOCKED\" (morphine rate=25 > hardMax=20)",
+      "actual": "screen = \"GUARDRAIL_BLOCKED\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-011",
+      "device": "ALARIS_GP",
+      "description": "Rate within soft limits transitions to RUNNING on RUN",
+      "dfuRef": "1000DF §2.4 — \"Press RUN; pump starts infusion\"; CLAUDE.md §6.2 RATE_ENTRY → RUNNING",
+      "pvsioweb": true,
+      "expected": "screen === \"RUNNING\" (morphine rate=5, within softMin=1..softMax=10)",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-012",
+      "device": "ALARIS_GP",
+      "description": "Guardrail override transitions to RUNNING and logs guardrail_override",
+      "dfuRef": "BDDF §4 — \"OVERRIDE softkey: nurse accepts responsibility, infusion starts\"; CLAUDE.md Rule 7 — must always log",
+      "pvsioweb": true,
+      "expected": "screen === \"RUNNING\", log contains guardrail_override event",
+      "actual": "screen=\"RUNNING\", guardrail_override logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-013",
+      "device": "ALARIS_GP",
+      "description": "RE-ENTER from GUARDRAIL_WARNING returns to RATE_ENTRY",
+      "dfuRef": "BDDF §4 — \"RE-ENTER softkey: nurse cancels and reprograms rate\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RATE_ENTRY\"",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-014",
+      "device": "ALARIS_GP",
+      "description": "RE-ENTER from GUARDRAIL_BLOCKED returns to RATE_ENTRY (only option)",
+      "dfuRef": "BDDF §4 — \"Hard limit: only RE-ENTER is permitted, no override possible\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RATE_ENTRY\" (from GUARDRAIL_BLOCKED)",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-015",
+      "device": "ALARIS_GP",
+      "description": "RUNNING → ON_HOLD on pressHold()",
+      "dfuRef": "1000DF §3.1 — \"HOLD button: Put infusion on hold; amber LED lit\"",
+      "pvsioweb": true,
+      "expected": "screen === \"ON_HOLD\"",
+      "actual": "screen = \"ON_HOLD\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-016",
+      "device": "ALARIS_GP",
+      "description": "ON_HOLD → RUNNING on pressRun()",
+      "dfuRef": "1000DF §3.1 — \"Press RUN from hold to resume infusion\"",
+      "pvsioweb": true,
+      "expected": "screen === \"RUNNING\"",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-017",
+      "device": "ALARIS_GP",
+      "description": "Direction reversal during rate entry logs a correction event",
+      "dfuRef": "CLAUDE.md §6.3 — \"Detect correction: find last rate_adjust and check direction reversal\"",
+      "pvsioweb": false,
+      "expected": "second adjustChevron (opposite sign) produces a correction log entry",
+      "actual": "correction logged = true",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-018",
+      "device": "ALARIS_GP",
+      "description": "confirmVtbi() sets vtbi on state and transitions to RATE_ENTRY",
+      "dfuRef": "1000DF §2.4 — \"VTBI softkey: set volume to be infused\"; CLAUDE.md §6.2 VTBI_ENTRY → RATE_ENTRY",
+      "pvsioweb": false,
+      "expected": "state.vtbi === 250, screen === \"RATE_ENTRY\"",
+      "actual": "vtbi=250, screen=\"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-019",
+      "device": "ALARIS_GP",
+      "description": "INFUSION_COMPLETE alarm fires when volumeInfused reaches VTBI",
+      "dfuRef": "1000DF §7.2 — \"INFUSION_COMPLETE: volumeInfused >= vtbi\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ALARM\", alarmType === \"INFUSION_COMPLETE\"",
+      "actual": "screen=\"ALARM\", alarmType=\"INFUSION_COMPLETE\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-020",
+      "device": "ALARIS_GP",
+      "description": "Rate drops to KVO_RATE (1.0 ml/h) after INFUSION_COMPLETE",
+      "dfuRef": "1000DF §4 — \"KVO Rate 1.0 ml/h — runs after VTBI complete\"",
+      "pvsioweb": false,
+      "expected": "state.rate === 1.0 (FACTORY_DEFAULTS.KVO_RATE)",
+      "actual": "rate after VTBI complete = 1 ml/h (expected 1)",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-021",
+      "device": "ALARIS_GP",
+      "description": "OCCLUSION alarm priority is higher than AIR_IN_LINE in same tick",
+      "dfuRef": "1000DF §7.2 — alarm priority: \"OCCLUSION > AIR_IN_LINE > BATTERY_LOW > INFUSION_COMPLETE\"",
+      "pvsioweb": false,
+      "expected": "alarmType === \"OCCLUSION\" when pressureLevel ≥ 7 and volume near 500 ml",
+      "actual": "alarmType = \"OCCLUSION\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-022",
+      "device": "ALARIS_GP",
+      "description": "silenceAlarm() from ALARM with kvoActive=true resumes at RUNNING (KVO continues)",
+      "dfuRef": "1000DF §7.2 — \"KVO: running at KVO rate after VTBI complete\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\" after silence (KVO active)",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-023",
+      "device": "ALARIS_GP",
+      "description": "silenceAlarm() from ALARM with kvoActive=false transitions to ON_HOLD",
+      "dfuRef": "1000DF §7.2 — \"Critical alarms: press SILENCE softkey → ON HOLD\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ON_HOLD\" after silence (no KVO)",
+      "actual": "screen = \"ON_HOLD\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-024",
+      "device": "ALARIS_GP",
+      "description": "MANUAL mode bypasses guardrails — any rate in [RATE_MIN, RATE_MAX] starts infusion",
+      "dfuRef": "BDDF §4 — \"MANUAL mode: drug library bypassed, no guardrails apply\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\" with MANUAL drug at 500 ml/h (above any drug soft limit)",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-AG-025",
+      "device": "ALARIS_GP",
+      "description": "pressHold() is a no-op when pump is not in RUNNING state",
+      "dfuRef": "CLAUDE.md §6.2 — \"RUNNING → ON_HOLD (HOLD button)\" — transition only valid from RUNNING",
+      "pvsioweb": false,
+      "expected": "screen unchanged when pressHold called from RATE_ENTRY",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-001",
+      "device": "B_BRAUN",
+      "description": "Power-on state is STARTUP (self-test), not LANGUAGE_SELECT",
+      "dfuRef": "B. Braun IFU §Startup sequence — \"Device performs self-test on power-on\"",
+      "pvsioweb": false,
+      "expected": "screen === \"STARTUP\"",
+      "actual": "screen = \"STARTUP\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-002",
+      "device": "B_BRAUN",
+      "description": "STARTUP → DRUG_SELECT on completeBoot()",
+      "dfuRef": "B. Braun IFU §Power-on — \"Self-test complete: pump advances to drug selection\"",
+      "pvsioweb": false,
+      "expected": "screen === \"DRUG_SELECT\"",
+      "actual": "screen = \"DRUG_SELECT\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-003",
+      "device": "B_BRAUN",
+      "description": "Rate in advisory zone (within 20% of softMax) triggers GUARDRAIL_ADVISORY on RUN",
+      "dfuRef": "B. Braun IFU \"Clinical Advisories\" tier — rate within 20% of soft limit boundary; BRAUN_DEFAULTS.ADVISORY_ZONE_FRACTION = 0.20",
+      "pvsioweb": false,
+      "expected": "screen === \"GUARDRAIL_ADVISORY\" (morphine rate=9, advisory threshold=8.0, softMax=10)",
+      "actual": "screen = \"GUARDRAIL_ADVISORY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-004",
+      "device": "B_BRAUN",
+      "description": "Rate exceeding soft limit triggers GUARDRAIL_WARNING (Soft Stop) on RUN",
+      "dfuRef": "B. Braun IFU \"Soft Stop\" tier — \"Rate exceeds programmed soft limit; nurse must override or re-enter\"",
+      "pvsioweb": false,
+      "expected": "screen === \"GUARDRAIL_WARNING\" (morphine rate=15 > softMax=10)",
+      "actual": "screen = \"GUARDRAIL_WARNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-005",
+      "device": "B_BRAUN",
+      "description": "Rate exceeding hard limit triggers GUARDRAIL_BLOCKED (Hard Stop) on RUN",
+      "dfuRef": "B. Braun IFU \"Hard Stop\" tier — \"Rate exceeds hard limit; only RE-ENTER permitted\"",
+      "pvsioweb": false,
+      "expected": "screen === \"GUARDRAIL_BLOCKED\" (morphine rate=25 > hardMax=20)",
+      "actual": "screen = \"GUARDRAIL_BLOCKED\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-006",
+      "device": "B_BRAUN",
+      "description": "Acknowledging advisory notice transitions to RUNNING and logs event",
+      "dfuRef": "B. Braun IFU \"Clinical Advisories\" — \"Nurse acknowledges to continue; infusion starts automatically\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\", log contains guardrail_advisory_acknowledged",
+      "actual": "screen=\"RUNNING\", advisory_ack logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-007",
+      "device": "B_BRAUN",
+      "description": "Advisory zone boundary is exactly 20% of soft limit (ADVISORY_ZONE_FRACTION=0.20)",
+      "dfuRef": "B. Braun IFU \"Clinical Advisories\"; BRAUN_DEFAULTS.ADVISORY_ZONE_FRACTION = 0.20",
+      "pvsioweb": false,
+      "expected": "rate=8.0 (exactly at threshold) → NOT advisory; rate=8.1 → advisory",
+      "actual": "rate=8.0 → \"RUNNING\", rate=8.1 → \"GUARDRAIL_ADVISORY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-008",
+      "device": "B_BRAUN",
+      "description": "Bolus volume is clamped at BOLUS_MAX_ML = 2.0 ml (vs Alaris GP 5.0 ml)",
+      "dfuRef": "B. Braun IFU Bolus section — \"Bolus Volume Max 2 ml\"; BRAUN_DEFAULTS.BOLUS_MAX_ML = 2.0",
+      "pvsioweb": false,
+      "expected": "bolusVolumeDelivered clamped to 2.0 ml when 3.0 ml was accumulated",
+      "actual": "bolusVolumeDelivered = 2 ml (max = 2)",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-009",
+      "device": "B_BRAUN",
+      "description": "Connecting SpaceCom2 sets spacecom2Connected=true and logs spacecom2_connected",
+      "dfuRef": "B. Braun SpaceCom2 module docs; CISA ICSMA-21-294-01 — CVE-2021-33882 attack surface (networked device)",
+      "pvsioweb": false,
+      "expected": "spacecom2Connected === true, log contains spacecom2_connected",
+      "actual": "connected=true, event logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-010",
+      "device": "B_BRAUN",
+      "description": "Disconnecting SpaceCom2 sets spacecom2Connected=false and logs spacecom2_disconnected",
+      "dfuRef": "B. Braun SpaceCom2 module docs — disconnected pump cannot receive drug library updates",
+      "pvsioweb": false,
+      "expected": "spacecom2Connected === false, log contains spacecom2_disconnected",
+      "actual": "connected=false, event logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-011",
+      "device": "B_BRAUN",
+      "description": "RUNNING → ON_HOLD on pressHold()",
+      "dfuRef": "B. Braun IFU §HOLD button — \"Suspends infusion, amber LED lit\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ON_HOLD\"",
+      "actual": "screen = \"ON_HOLD\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-012",
+      "device": "B_BRAUN",
+      "description": "ON_HOLD → RUNNING on pressRun_fromHold()",
+      "dfuRef": "B. Braun IFU §RUN button from hold — \"Resumes infusion at programmed rate\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\"",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-013",
+      "device": "B_BRAUN",
+      "description": "INFUSION_COMPLETE alarm fires when volumeInfused reaches VTBI",
+      "dfuRef": "B. Braun IFU §VTBI — \"Alarm sounds when programmed volume is delivered\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ALARM\", alarmType === \"INFUSION_COMPLETE\"",
+      "actual": "screen=\"ALARM\", alarmType=\"INFUSION_COMPLETE\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-014",
+      "device": "B_BRAUN",
+      "description": "KVO rate = 1.0 ml/h after INFUSION_COMPLETE (same as Alaris GP)",
+      "dfuRef": "B. Braun IFU — \"KVO rate 1 ml/h\"; BRAUN_DEFAULTS.KVO_RATE = 1.0",
+      "pvsioweb": false,
+      "expected": "state.rate === 1.0 after INFUSION_COMPLETE",
+      "actual": "rate = 1 ml/h (expected 1)",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-015",
+      "device": "B_BRAUN",
+      "description": "Rate is edited directly in state.rate (no separate rateBuffer field)",
+      "dfuRef": "B. Braun Infusomat Space IFU — rate entry model; braunStateMachine.ts design note §6",
+      "pvsioweb": false,
+      "expected": "adjustChevron updates state.rate directly; no rateBuffer property in BraunPumpState",
+      "actual": "rate=6, rateBuffer absent=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-016",
+      "device": "B_BRAUN",
+      "description": "firmwareSigned = false by design on all Infusomat Space devices",
+      "dfuRef": "CISA ICSMA-21-294-01 — CVE-2021-33885 (CVSS 9.0): firmware update protocol lacks cryptographic signature verification",
+      "pvsioweb": false,
+      "expected": "BRAUN_DEFAULTS.FIRMWARE_SIGNED === false; initial state firmwareSigned === false",
+      "actual": "BRAUN_DEFAULTS.FIRMWARE_SIGNED=false, state.firmwareSigned=false",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-017",
+      "device": "B_BRAUN",
+      "description": "MANUAL mode bypasses all three guardrail tiers — infusion starts immediately",
+      "dfuRef": "B. Braun IFU — \"MANUAL mode: drug library not consulted, no guardrail limits apply\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\" with MANUAL drug at 500 ml/h",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-BB-018",
+      "device": "B_BRAUN",
+      "description": "confirmVtbi() sets vtbi and vtbiSet=true, returns to RATE_ENTRY",
+      "dfuRef": "B. Braun IFU §VTBI programming — \"VTBI confirmed: pump stores volume, returns to rate screen\"",
+      "pvsioweb": false,
+      "expected": "vtbi === 250, vtbiSet === true, screen === \"RATE_ENTRY\"",
+      "actual": "vtbi=250, vtbiSet=true, screen=\"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-001",
+      "device": "GRASEBY",
+      "description": "Power-on state is RATE_ENTRY (no language or startup screen)",
+      "dfuRef": "Graseby 3100 Operators Manual §Operating Sequence — \"Power on: device ready for rate entry\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RATE_ENTRY\"",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-002",
+      "device": "GRASEBY",
+      "description": "No guardrails — pressStart() at any valid rate transitions to RUNNING",
+      "dfuRef": "Graseby 3100 Operators Manual — no guardrail section exists; NPSA Alert 2010: \"Absence of dose error prevention\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RUNNING\" at rate=150 ml/h (above any clinical soft limit) — no warning or block",
+      "actual": "screen = \"RUNNING\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-003",
+      "device": "GRASEBY",
+      "description": "pressStart() with rate = 0 is rejected — infusion cannot start",
+      "dfuRef": "Graseby 3100 Operators Manual §Operating Sequence — \"Rate must be set before starting\"",
+      "pvsioweb": false,
+      "expected": "screen unchanged (still RATE_ENTRY) when rate=0",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-004",
+      "device": "GRASEBY",
+      "description": "Rate maximum is 199.9 ml/h (syringe driver spec; LVPs reach 1200 ml/h)",
+      "dfuRef": "Graseby 3100 Operators Manual §Specifications — \"Maximum rate 199.9 ml/h\"; GRASEBY_DEFAULTS.RATE_MAX = 199.9",
+      "pvsioweb": false,
+      "expected": "GRASEBY_DEFAULTS.RATE_MAX === 199.9; adjustRate past max logs boundary_hit",
+      "actual": "RATE_MAX=199.9, boundary_hit logged=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-005",
+      "device": "GRASEBY",
+      "description": "SYRINGE_EMPTY alarm fires when volumeInfused reaches syringeCapacityMl",
+      "dfuRef": "Graseby 3100 Operators Manual §Alarms — \"Syringe empty alarm: audible tone + LED\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ALARM\", alarmType === \"SYRINGE_EMPTY\"",
+      "actual": "screen=\"ALARM\", alarmType=\"SYRINGE_EMPTY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-006",
+      "device": "GRASEBY",
+      "description": "No drug library — state has no drug selection step or selectedDrug field",
+      "dfuRef": "Graseby 3100 Operators Manual — \"Rate entry in ml/h only; no drug-based programming\"",
+      "pvsioweb": false,
+      "expected": "GrasebyPumpState has no selectedDrug, selectedDrugId, or drugLibraryUsed fields",
+      "actual": "selectedDrug absent=true, selectedDrugId absent=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-007",
+      "device": "GRASEBY",
+      "description": "No VTBI field — syringe capacity is the only volume constraint",
+      "dfuRef": "Graseby 3100 Operators Manual — \"No VTBI; infusion runs until syringe empty\"",
+      "pvsioweb": false,
+      "expected": "GrasebyPumpState has syringeCapacityMl but no vtbi field",
+      "actual": "syringeCapacityMl present=true, vtbi absent=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-008",
+      "device": "GRASEBY",
+      "description": "No bolus mode — state has no bolusActive or bolusVolume fields",
+      "dfuRef": "Graseby 3100 Operators Manual — \"No bolus function on syringe driver\"",
+      "pvsioweb": false,
+      "expected": "GrasebyPumpState has no bolusActive or bolusVolumeDelivered fields",
+      "actual": "bolusActive absent=true, bolusVolumeDelivered absent=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-009",
+      "device": "GRASEBY",
+      "description": "RUNNING → ON_HOLD on pressStop()",
+      "dfuRef": "Graseby 3100 Operators Manual §STOP button — \"Suspends infusion\"",
+      "pvsioweb": false,
+      "expected": "screen === \"ON_HOLD\"",
+      "actual": "screen = \"ON_HOLD\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-GR-010",
+      "device": "GRASEBY",
+      "description": "ON_HOLD → RATE_ENTRY on pressReprogram() for rate change",
+      "dfuRef": "Graseby 3100 Operators Manual §Reprogramming — \"Return to rate entry from hold\"",
+      "pvsioweb": false,
+      "expected": "screen === \"RATE_ENTRY\"",
+      "actual": "screen = \"RATE_ENTRY\"",
+      "passed": true
+    },
+    {
+      "id": "BFV-CD-001",
+      "device": "CROSS_DEVICE",
+      "description": "Guardrail tier count: Alaris GP = 2 tiers, B. Braun = 3 tiers, Graseby = 0 tiers",
+      "dfuRef": "BDDF §4 (2-tier); B. Braun IFU §Advisories/Soft Stop/Hard Stop (3-tier); Graseby Manual (no guardrails); NPSA 2010",
+      "pvsioweb": false,
+      "expected": "Alaris GP: warning+blocked (2), B. Braun: advisory+warning+blocked (3), Graseby: none (0)",
+      "actual": "Alaris tiers=2 ✓, B.Braun tiers=3 ✓, Graseby tiers=0 ✓ → all correct=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-CD-002",
+      "device": "CROSS_DEVICE",
+      "description": "Bolus maximum: Alaris GP = 5.0 ml, B. Braun = 2.0 ml, Graseby = N/A (no bolus)",
+      "dfuRef": "Alaris GP 1000DF §4 \"Bolus Volume Max 5 ml\"; B. Braun IFU \"Bolus Volume Max 2 ml\"; Graseby Manual (no bolus mode)",
+      "pvsioweb": false,
+      "expected": "FACTORY_DEFAULTS.BOLUS_VOLUME_MAX=5, BRAUN_DEFAULTS.BOLUS_MAX_ML=2, Graseby state has no bolusActive field",
+      "actual": "Alaris BOLUS_MAX=5 ml, B.Braun BOLUS_MAX=2 ml, Graseby no bolus=true",
+      "passed": true
+    },
+    {
+      "id": "BFV-CD-003",
+      "device": "CROSS_DEVICE",
+      "description": "All three devices share the same chevron step sizes: STEP_LARGE=10, STEP_SMALL=1",
+      "dfuRef": "Alaris GP 1000DF §3.1; B. Braun IFU §Rate entry; Graseby Manual §Rate entry — all describe ×10 and ×1 increments",
+      "pvsioweb": false,
+      "expected": "All three STEP_LARGE=10, STEP_SMALL=1",
+      "actual": "AG(10/1), BB(10/1), GR(10/1)",
+      "passed": true
+    },
+    {
+      "id": "BFV-CD-004",
+      "device": "CROSS_DEVICE",
+      "description": "Rate maximum: Alaris GP = B. Braun = 1200 ml/h (LVPs); Graseby = 199.9 ml/h (syringe driver)",
+      "dfuRef": "Alaris GP 1000DF §4; B. Braun IFU §Specifications (both 1200 ml/h); Graseby Manual §Specifications (199.9 ml/h)",
+      "pvsioweb": false,
+      "expected": "Alaris=1200, B.Braun=1200, Graseby=199.9",
+      "actual": "Alaris=1200, B.Braun=1200, Graseby=199.9 ml/h",
+      "passed": true
+    },
+    {
+      "id": "BFV-CD-005",
+      "device": "CROSS_DEVICE",
+      "description": "Initial screen differs across devices: Alaris=LANGUAGE_SELECT, B.Braun=STARTUP, Graseby=RATE_ENTRY",
+      "dfuRef": "Alaris GP 1000DF §2.1; B. Braun IFU §Startup; Graseby Manual §Operating Sequence",
+      "pvsioweb": false,
+      "expected": "AG: LANGUAGE_SELECT, BB: STARTUP, GR: RATE_ENTRY — each reflects device UX design philosophy",
+      "actual": "AG=\"LANGUAGE_SELECT\", BB=\"STARTUP\", GR=\"RATE_ENTRY\"",
+      "passed": true
+    }
+  ]
+}
