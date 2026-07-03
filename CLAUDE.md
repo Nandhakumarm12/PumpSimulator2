@@ -820,4 +820,85 @@ npm run generate     # Run dataset generator (creates data/dataset/training.csv)
 
 ---
 
+## 16. CURRENT PROJECT STATUS
+### Last updated: 2026-07-03 — read this section first when resuming work
+
+### What Has Been Built (fully committed to main)
+
+#### Three Device Simulators (all in src/)
+| Device | State Machine | UI Component | Guardrail Tiers | Status |
+|--------|--------------|--------------|-----------------|--------|
+| BD Alaris GP | src/pump/stateMachine.ts (503 LOC) | src/components/AlarisGP.tsx | 2 (warning + blocked) | Complete |
+| B. Braun Infusomat Space | src/pump/braun/braunStateMachine.ts (1195 LOC) | src/components/BraunInfusomat.tsx | 3 (advisory + warning + blocked) | Complete |
+| Graseby 3100 | src/pump/graseby/grasebyStateMachine.ts (323 LOC) | src/components/Graseby3100.tsx | 0 (none) | Complete |
+
+#### AI Pipeline (src/ai/)
+- featureExtractor.ts — 48-field TrainingRecord from SessionLog[]
+- labellingRules.ts — R01–R21 Alaris/shared, BB-R01–BB-R05 B.Braun-specific
+- scenarioGenerator.ts — 4 profiles: ideal / neglected / cyber_risk / emergency
+- datasetBuilder.ts — generates N labeled records (run: npm run generate)
+- deviceDesign.ts — Layer 0 design scores for 7 device profiles
+- braunRules.ts — B.Braun-specific risk rules
+
+#### Backend (server/)
+- server/main.py — FastAPI ML server (RandomForest + DecisionTree + LogisticRegression)
+- Trains on generated dataset, exposes /predict endpoint with feature contributions
+- Run: npm run server (uses .venv Python)
+
+#### Behavioural Fidelity Validation (src/tests/validation/)
+- 58 BFV tests — 100% pass rate (run: npm run validate)
+- alarisTestCases.ts — 25 tests (BFV-AG-001 to BFV-AG-025), 10 PVSio-web aligned
+- braunTestCases.ts — 18 tests (BFV-BB-001 to BFV-BB-018)
+- grasebyTestCases.ts — 10 tests (BFV-GR-001 to BFV-GR-010)
+- crossDeviceTestCases.ts — 5 tests (BFV-CD-001 to BFV-CD-005)
+- generateValidationReport.ts — writes data/validation/report.json
+- validation.test.ts — Vitest runner (run: npm test)
+
+#### UI Architecture
+- App.tsx — 5 tabs: ALARIS GP / B. BRAUN / GRASEBY 3100 / NETWORK SIM / RESEARCH
+- src/styles/themes.ts — DARK_THEME / LIGHT_THEME / THEMES registry (edit here for new themes)
+- src/styles/tokens.ts — C (colors) and T (typography) token exports
+- State persists across page refresh via localStorage (keys: alaris_pump_state etc.)
+
+### Three-Paper Publication Plan
+
+#### Paper 1 — UCAMI (DONE: draft + .docx in docs/)
+- Title: "Operationalizing Trust in IoE-Connected Infusion Pumps: A Simulation-Driven Multi-Layer Risk Assessment Framework"
+- File: docs/ucami_paper_draft.docx (built by docs/build_ucami_docx.py)
+- Contribution: The 4-layer composite trust framework (Design 20% + Interaction 30% + Config 25% + System 25%) → A+–F grade
+- Key finding: System governance factors outweigh dosing error as trust-degradation signals
+
+#### Paper 2 — Conference (DONE: draft + .docx in docs/)
+- Title: "From Manual to Model: Simulation-Enabled Safety and Security Research for Infusion Pumps"
+- File: docs/paper2_from_manual_to_model.docx (built by docs/build_paper2_docx.py)
+- Contribution: DFU-to-simulator methodology, three device simulators, 58-test BFV suite
+- Rebuild docx: python3 docs/build_paper2_docx.py
+
+#### Paper 3 — Journal (NOT STARTED)
+- Focus: Complete AI pipeline — full dataset, ML training results, clinical validation protocol
+- Requires: Real human participant data from simulator sessions (future user study)
+- ~20 pages
+
+### Key Numbers to Remember
+- Total codebase: ~18,000 lines TypeScript
+- BFV tests: 58 total, 100% pass (25 Alaris + 18 B.Braun + 10 Graseby + 5 cross-device)
+- Risk rules: R01–R21 (shared), BB-R01–BB-R05 (B.Braun)
+- 4-layer composite: Design 20% + Interaction 30% + Config 25% + System 25%
+- Grades: A+(0–0.10) A(0.11–0.20) B(0.21–0.35) C(0.36–0.50) D(0.51–0.65) E(0.66–0.80) F(0.81–1.00)
+- B.Braun CVEs in scope: CVE-2021-33885 (CVSS 9.0, firmware unsigned), CVE-2021-33882 (SpaceCom2 no auth)
+- Dataset is entirely synthetic — 100% ML accuracy is expected and correct
+
+### Commands to Run on a Fresh Clone
+```bash
+npm install
+npm run dev          # Simulator at localhost:5173
+npm test             # All 58 BFV tests (should be 100%)
+npm run validate     # Generates data/validation/report.json
+npm run generate     # Generates training dataset CSV
+python3 docs/build_paper2_docx.py   # Rebuild Paper 2 Word doc
+python3 docs/build_ucami_docx.py    # Rebuild Paper 1 Word doc
+```
+
+---
+
 END OF CLAUDE.md
